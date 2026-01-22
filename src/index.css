@@ -1,0 +1,25 @@
+@import "tailwindcss";
+
+.p-button:focus {
+  box-shadow: none !important;
+}
+.fino-base-button {
+  @apply text-black px-[12px] py-[6px] rounded-[8px]  h-[40px]  text-[14px]  w-max no-underline hover:no-underline;
+}
+
+/* Filled Button */
+.fino-primary-button {
+  @apply bg-[#4478fc] text-[#eff6ff]   border-none   hover:bg-[#3d38f5]   hover:text-[#eff6ff] no-underline;
+}
+
+.fino-secondary-button {
+  @apply bg-[#eff6ff] text-[#4478fc]   border-none   hover:bg-[#eff6ff]   hover:text-[#4478fc] no-underline;
+}
+.fino-text-button {
+  @apply hover:bg-[#eff6ff]   hover:text-[#4478fc] no-underline;
+}
+
+/* Outlined Button */
+.fino-outlined-button {
+  @apply border border-[#4478fc] text-[#4478fc] hover:bg-[#eff6ff]   hover:text-[#4478fc] no-underline;
+}
