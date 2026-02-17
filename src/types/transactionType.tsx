@@ -48,3 +48,7 @@ export type SummaryCardProps = {
   textColor: string;
   iconBg: string;
 };
+export type TransactionsStoreType = {
+  transactions: Transaction[];
+  nextCursor: Date;
+};

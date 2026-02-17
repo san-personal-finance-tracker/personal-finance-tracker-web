@@ -12,9 +12,12 @@ import { FloatLabel } from "primereact/floatlabel";
 import { useForm, Controller } from "react-hook-form";
 import { Inplace, InplaceContent, InplaceDisplay } from "primereact/inplace";
 import { InputText } from "primereact/inputtext";
+import FinoButton from "../components/FinoButton";
+import { useTransactionsStore } from "../store/transaction.store";
 
 const AllTransactions: React.FC = () => {
-  const [data, setData] = useState<TransactionsResponse | null>(null);
+  const { transactions, nextCursor, setInitial, append, reset } =
+    useTransactionsStore();
 
   // Initialize React Hook Form
   const { control, watch, setValue } = useForm<FilterFormData>({
@@ -55,70 +58,82 @@ const AllTransactions: React.FC = () => {
     { label: "Investment", value: "investment" },
     { label: "Others", value: "others" },
   ];
+  const fetchTransactionsWithCursor = async ({
+    type,
+    category,
+    sort,
+    search,
+    cursor,
+  }: {
+    type?: string | null;
+    category?: string | null;
+    sort?: string | null;
+    search?: string | null;
+    cursor?: string | null;
+  }) => {
+    const params: any = {
+      limit: 3,
+      sort: sort || "desc",
+    };
 
-  const fetchTransactions = async (
-    type?: string | null,
-    category?: string | null,
-    sort?: string,
-    search?: string,
-  ) => {
-    try {
-      const params: any = {
-        page: 1,
-        limit: 10,
-        sort: sort || "desc",
-      };
+    if (cursor) params.cursor = cursor;
+    if (type && type !== "all") params.type = type;
+    if (category && category !== "all") params.category = category;
+    if (search) params.search = search;
 
-      // Only add type and category if they are not null
-      if (type && type !== "all") {
-        params.type = type;
-      }
-      if (category && category !== "all") {
-        params.category = category;
-      }
-      if (search) {
-        params.search = search;
-      }
-      const { data } = await FinanceService.getTransactions(params);
-      setData(data);
-      console.log(data);
-    } catch (error) {
-      console.error(error);
-    }
+    return FinanceService.getTransactionsWithCursor(params);
   };
+  useEffect(() => {
+    const loadInitial = async () => {
+      reset();
+
+      const { data } = await fetchTransactionsWithCursor({
+        type: watchedType,
+        category: watchedCategory,
+        sort: watchedSort,
+        search: watchedSearch,
+      });
+
+      setInitial(data.data, data?.meta?.nextCursor);
+    };
+
+    loadInitial();
+  }, [watchedType, watchedCategory, watchedSort, watchedSearch]);
+
   const handleDelete = async (id: string) => {
     try {
       await FinanceService.deleteTransaction(id);
-
-      // Refetch with current filters
-      fetchTransactions(
-        watchedType,
-        watchedCategory,
-        watchedSort,
-        watchedSearch,
-      );
     } catch (error) {
       console.error("Failed to delete transaction", error);
     }
   };
-
-  // Fetch transactions when filter values change
-  useEffect(() => {
-    fetchTransactions(watchedType, watchedCategory, watchedSort, watchedSearch);
-  }, [watchedType, watchedCategory, watchedSort, watchedSearch]);
-
   const formatDate = (date: string) =>
     new Date(date).toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
       year: "numeric",
     });
+  console.log(transactions);
+  console.log(nextCursor);
+  const handleLoadMore = async () => {
+    if (!nextCursor) return;
+
+    const { data } = await fetchTransactionsWithCursor({
+      type: watchedType,
+      category: watchedCategory,
+      sort: watchedSort,
+      search: watchedSearch,
+      cursor: nextCursor,
+    });
+
+    append(data.data, data?.meta?.nextCursor);
+  };
 
   return (
     <div>
       <div className="flex justify-between items-center">
         <h2 className="pb-6 text-lg font-medium!">All Transactions</h2>
-        <p className="text-gray-500">{data?.meta?.total} transactions</p>
+        {/* <p className="text-gray-500">{data?.meta?.total} transactions</p> */}
       </div>
       <div className="rounded-2xl border border-[#d1d5db] transition-all duration-200 p-4 flex flex-col gap-8 bg-white">
         <div className="flex items-center justify-between gap-2 h-[40px]">
@@ -139,7 +154,6 @@ const AllTransactions: React.FC = () => {
                 setValue("category", "all");
                 setValue("sort", "desc");
                 setValue("search", "");
-                fetchTransactions();
               }}
             ></i>
           </div>
@@ -237,10 +251,20 @@ const AllTransactions: React.FC = () => {
         </div>
       </div>
       <ListTransaction
-        transactions={data?.transactions || []}
+        transactions={transactions}
         formatDate={formatDate}
         handleDelete={handleDelete}
       />
+      {nextCursor && (
+        <div className="flex justify-center">
+          <FinoButton
+            variant="secondary"
+            label="Load More"
+            className="mt-3!"
+            onClick={handleLoadMore}
+          />
+        </div>
+      )}
     </div>
   );
 };

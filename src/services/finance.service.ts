@@ -22,4 +22,9 @@ export const FinanceService = {
   createTransaction(data: CreateTransactionFormData) {
     return api.post("/finance", data);
   },
+  getTransactionsWithCursor(params: any) {
+    return api.get("/finance/transactions", {
+      params,
+    });
+  },
 };
